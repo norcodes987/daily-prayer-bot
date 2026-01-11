@@ -76,16 +76,9 @@ async function pinDailyPrayerCard() {
   savePinnedMessageId(msg.message_id);
 }
 
-// async function updatePinnedCard() {
-//   const pinnedId = getPinnedMessageId();
-//   if (!pinnedId) return;
-//   const text = renderDailyPrayerCard();
-//   await bot.telegram.editMessageText(GROUP_CHAT_ID, pinnedId, undefined, text);
-// }
 // === COMMANDS ===
 
 const awaitingPrayer = new Map<string, number>(); //userId, messageId
-// bot.start((ctx) => ctx.reply("🙏 Welcome to the Daily Prayer Bot!"));
 
 // add prayer
 bot.start(async (ctx) => {
@@ -115,7 +108,6 @@ bot.on("text", async (ctx) => {
 
   await ctx.reply("✅ Your prayer has been added. Thank you! ❤️");
 
-  // Optional: update pinned card in group
   const pinnedId = getPinnedMessageId();
   if (pinnedId) {
     await ctx.telegram.editMessageText(
