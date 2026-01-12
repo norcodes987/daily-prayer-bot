@@ -32,7 +32,6 @@ const bot = new Telegraf<Context>(BOT_TOKEN);
 function renderDailyPrayerCard(): string {
   const members = getGroupMembers();
   const prayersToday = getPrayersToday();
-  console.log("members: ", members);
   const progress = members.map((m) =>
     prayersToday.includes(m.user_id) ? "🟢" : "⚪"
   );
