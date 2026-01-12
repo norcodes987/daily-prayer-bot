@@ -16,8 +16,7 @@ import {
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const GROUP_CHAT_ID = process.env.GROUP_CHAT_ID;
-console.log("BOT_TOKEN:", process.env.BOT_TOKEN);
-console.log("GROUP_CHAT_ID:", process.env.GROUP_CHAT_ID);
+
 if (!BOT_TOKEN || !GROUP_CHAT_ID) {
   throw new Error("Please set BOT_TOKEN and GROUP_CHAT_ID");
 }
@@ -139,15 +138,15 @@ bot.action(ButType.VIEW_TODAY, async (ctx) => {
 });
 
 // Daily cron at 12 AM
-cron.schedule("0 0 * * *", async () => {
-  console.log("📌 Creating new daily pinned prayer card...");
-  await pinDailyPrayerCard();
-});
-
-// (async () => {
-//   console.log("Testing pinned card now...");
+// cron.schedule("0 0 * * *", async () => {
+//   console.log("📌 Creating new daily pinned prayer card...");
 //   await pinDailyPrayerCard();
-// })();
+// });
+
+(async () => {
+  console.log("Testing pinned card now...");
+  await pinDailyPrayerCard();
+})();
 
 bot.launch().then(async () => {
   console.log("🙏 Prayer bot running");
