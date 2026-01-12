@@ -16,7 +16,8 @@ import {
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const GROUP_CHAT_ID = process.env.GROUP_CHAT_ID;
-
+console.log("BOT_TOKEN:", process.env.BOT_TOKEN);
+console.log("GROUP_CHAT_ID:", process.env.GROUP_CHAT_ID);
 if (!BOT_TOKEN || !GROUP_CHAT_ID) {
   throw new Error("Please set BOT_TOKEN and GROUP_CHAT_ID");
 }
