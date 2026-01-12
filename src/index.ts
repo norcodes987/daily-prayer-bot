@@ -32,7 +32,7 @@ const bot = new Telegraf<Context>(BOT_TOKEN);
 function renderDailyPrayerCard(): string {
   const members = getGroupMembers();
   const prayersToday = getPrayersToday();
-
+  console.log("members: ", members);
   const progress = members.map((m) =>
     prayersToday.includes(m.user_id) ? "🟢" : "⚪"
   );
@@ -138,15 +138,15 @@ bot.action(ButType.VIEW_TODAY, async (ctx) => {
 });
 
 // Daily cron at 12 AM
-// cron.schedule("0 0 * * *", async () => {
-//   console.log("📌 Creating new daily pinned prayer card...");
-//   await pinDailyPrayerCard();
-// });
-
-(async () => {
-  console.log("Testing pinned card now...");
+cron.schedule("0 0 * * *", async () => {
+  console.log("📌 Creating new daily pinned prayer card...");
   await pinDailyPrayerCard();
-})();
+});
+
+// (async () => {
+//   console.log("Testing pinned card now...");
+//   await pinDailyPrayerCard();
+// })();
 
 bot.launch().then(async () => {
   console.log("🙏 Prayer bot running");
