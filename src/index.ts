@@ -38,7 +38,7 @@ function renderDailyPrayerCard(): string {
   const count = prayersToday.length;
   const total = members.length;
 
-  let text = `📖 Daily Prayer – ${today()}\n────────────────────────────\n`;
+  let text = `📖 Daily Prayer – ${today()}\n \n`;
   text += `👥 Today’s Progress\n${progress.join(
     ""
   )}   ${count} / ${total} submitted\n\n`;
@@ -123,7 +123,7 @@ bot.action(ButType.VIEW_TODAY, async (ctx) => {
   const prayers: Prayer[] = db
     .prepare<string, Prayer>("SELECT * FROM prayers WHERE date = ?")
     .all(today());
-  let text = `📜 Today’s Prayers – ${today()}\n────────────────────\n`;
+  let text = `📜 Today’s Prayers – ${today()}\n \n`;
   prayers.forEach((p) => {
     const member = db
       .prepare<string, Member>(
