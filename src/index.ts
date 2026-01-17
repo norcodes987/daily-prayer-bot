@@ -55,7 +55,7 @@ async function pinDailyPrayerCard() {
   const me = await bot.telegram.getMe();
   const keyboard = getKeyboard(me.username!);
   const messageId = getPinnedMessageId();
-
+  console.log("messageId: ", messageId);
   try {
     if (messageId) {
       await bot.telegram.editMessageText(
@@ -77,7 +77,7 @@ async function pinDailyPrayerCard() {
     renderDailyPrayerCard(),
     keyboard
   );
-
+  console.log(msg);
   savePinnedMessageId(msg.message_id);
 }
 
