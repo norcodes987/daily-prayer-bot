@@ -6,8 +6,10 @@ import { ButType, type Member, type Prayer } from "./interface";
 import {
   addMember,
   getGroupMembers,
+  getKeyboard,
   getPinnedMessageId,
   getPrayersToday,
+  getTodayPrayersText,
   prayerTemplate,
   savePinnedMessageId,
   savePrayer,
@@ -51,27 +53,31 @@ function renderDailyPrayerCard(): string {
 // pin and update functions
 async function pinDailyPrayerCard() {
   const me = await bot.telegram.getMe();
-  const botUsername = me.username!;
+  const keyboard = getKeyboard(me.username!);
+  const messageId = getPinnedMessageId();
+
+  try {
+    if (messageId) {
+      await bot.telegram.editMessageText(
+        GROUP_CHAT_ID,
+        messageId,
+        undefined,
+        renderDailyPrayerCard(),
+        keyboard
+      );
+      return;
+    }
+  } catch (err) {
+    console.warn("Edit failed, creating new card");
+  }
+
+  // Fallback: create new message
   const msg = await bot.telegram.sendMessage(
     GROUP_CHAT_ID ?? 0,
     renderDailyPrayerCard(),
-    {
-      reply_markup: {
-        inline_keyboard: [
-          [
-            {
-              text: "✍️ Add Prayer",
-              url: `https://t.me/${botUsername}?start=${ButType.ADD_PRAYER}`,
-            },
-          ],
-          [{ text: "📜 View Today", callback_data: ButType.VIEW_TODAY }],
-        ],
-      },
-    }
+    keyboard
   );
-  await bot.telegram.pinChatMessage(GROUP_CHAT_ID ?? 0, msg.message_id, {
-    disable_notification: true,
-  });
+
   savePinnedMessageId(msg.message_id);
 }
 
@@ -79,8 +85,8 @@ async function pinDailyPrayerCard() {
 
 const awaitingPrayer = new Map<string, number>(); //userId, messageId
 
-// add prayer
 bot.start(async (ctx) => {
+  // add prayer
   if (ctx.payload === ButType.ADD_PRAYER) {
     const userId = ctx.from.id.toString();
     addMember(userId, ctx.from.first_name || "Anonymous");
@@ -89,9 +95,14 @@ bot.start(async (ctx) => {
       reply_markup: { force_reply: true },
     });
     awaitingPrayer.set(userId, msg.message_id);
-  } else {
-    await ctx.reply("🙏 Welcome to the Daily Prayer Bot!");
+    return;
   }
+  // view prayers
+  if (ctx.payload === ButType.VIEW_TODAY) {
+    await ctx.reply(getTodayPrayersText());
+    return;
+  }
+  await ctx.reply("🙏 Welcome to the Daily Prayer Bot!");
 });
 // reply to template
 bot.on("text", async (ctx) => {
@@ -107,50 +118,35 @@ bot.on("text", async (ctx) => {
 
   await ctx.reply("✅ Your prayer has been added. Thank you! ❤️");
 
+  bot.command(ButType.VIEW_TODAY, async (ctx) => {
+    await ctx.reply(getTodayPrayersText());
+  });
+
   const pinnedId = getPinnedMessageId();
   if (pinnedId) {
+    const me = await bot.telegram.getMe();
+    const keyboard = getKeyboard(me.username!);
     await ctx.telegram.editMessageText(
       GROUP_CHAT_ID,
       pinnedId,
       undefined,
-      renderDailyPrayerCard()
+      renderDailyPrayerCard(),
+      keyboard
     );
   }
 });
 
-//  view prayers
-bot.action(ButType.VIEW_TODAY, async (ctx) => {
-  const prayers: Prayer[] = db
-    .prepare<string, Prayer>("SELECT * FROM prayers WHERE date = ?")
-    .all(today());
-  let text = `📜 Today’s Prayers – ${today()}\n \n`;
-  prayers.forEach((p) => {
-    const member = db
-      .prepare<string, Member>(
-        "SELECT display_name FROM group_members WHERE user_id = ?"
-      )
-      .get(p.user_id);
-    text += `🙏 ${(member as Member).display_name}\n• ${p.text}\n\n`;
-  });
-  await ctx.answerCbQuery();
-  await ctx.reply(text);
-});
-
 // Daily cron at 12 AM
-cron.schedule("0 0 * * *", async () => {
-  console.log("📌 Creating new daily pinned prayer card...");
-  await pinDailyPrayerCard();
-});
-
-// (async () => {
-//   console.log("Testing pinned card now...");
+// cron.schedule("0 0 * * *", async () => {
+//   console.log("📌 Creating new daily pinned prayer card...");
 //   await pinDailyPrayerCard();
-// })();
+// });
+
+(async () => {
+  console.log("Testing pinned card now...");
+  await pinDailyPrayerCard();
+})();
 
 bot.launch().then(async () => {
   console.log("🙏 Prayer bot running");
-
-  if (!getPinnedMessageId()) {
-    await pinDailyPrayerCard();
-  }
 });
