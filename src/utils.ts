@@ -1,8 +1,9 @@
 import db from "./db";
 import { ButType, Member, Prayer } from "./interface";
 
-export const today = (): string => new Date().toISOString().slice(0, 10); //e.g. "2026-01-10" for Jan 10 2026
-
+export function today(): string {
+  return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+}
 export const prayerTemplate = () => {
   return (
     "🙏 Please fill in your prayer by replying to this message:\n\n" +
@@ -42,7 +43,6 @@ export const getPrayersToday = () => {
 };
 
 export const getTodayPrayersText = (): string => {
-  console.log("this should run");
   const prayers: Prayer[] = db
     .prepare<string, Prayer>("SELECT * FROM prayers WHERE date = ?")
     .all(today());
@@ -87,8 +87,21 @@ export const getKeyboard = (botUsername: string) => {
   };
 };
 
-export const ensureMemberExistis = (userId: string, display_name: string) => {
+export const ensureMemberExist = (userId: string, display_name: string) => {
   db.prepare(
     `INSERT OR IGNORE INTO group_members(user_id, display_name) VALUES(?, ?)`
   ).run(userId, display_name);
+};
+
+export const getTodayCardMessageId = (date: string) => {
+  const row = db
+    .prepare("SELECT message_id from daily_card WHERE date = ?")
+    .get(date) as { message_id: number };
+  return row?.message_id ?? null;
+};
+
+export const saveToayCardMessageId = (date: string, messageId: number) => {
+  db.prepare(
+    "INSERT OR REPLACE INTO daily_card(date, message_id) VALUES(?, ?)"
+  ).run(date, messageId);
 };

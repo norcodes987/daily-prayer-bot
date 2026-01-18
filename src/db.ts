@@ -24,11 +24,11 @@ db.prepare(
 `
 ).run();
 
-// Pinned Message table
+// daily card table
 db.prepare(
   `
-  CREATE TABLE IF NOT EXISTS pinned_message (
-  chat_id TEXT PRIMARY KEY,
+  CREATE TABLE IF NOT EXISTS daily_card (
+  date TEXT PRIMARY KEY,
   message_id INTEGER)
   `
 ).run();

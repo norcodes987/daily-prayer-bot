@@ -3,13 +3,15 @@ import "dotenv/config";
 import cron from "node-cron";
 import { ButType } from "./interface";
 import {
-  ensureMemberExistis,
+  ensureMemberExist,
   getGroupMembers,
   getKeyboard,
   getPrayersToday,
+  getTodayCardMessageId,
   getTodayPrayersText,
   prayerTemplate,
   savePrayer,
+  saveToayCardMessageId,
   today,
 } from "./utils";
 
@@ -47,6 +49,34 @@ function renderDailyPrayerCard(): string {
   return text;
 }
 
+async function upsertDailyPrayerCard(ctx?: Context) {
+  const me = await bot.telegram.getMe();
+  const keyboard = getKeyboard(me.username!);
+  const currentDate = today();
+  const existingMessageId = getTodayCardMessageId(currentDate);
+
+  try {
+    if (existingMessageId) {
+      await bot.telegram.editMessageText(
+        GROUP_CHAT_ID,
+        existingMessageId,
+        undefined,
+        renderDailyPrayerCard(),
+        keyboard
+      );
+      return;
+    }
+  } catch (err) {
+    console.warn("Edit failed, recreating daily card");
+  }
+  //create new card
+  const msg = await bot.telegram.sendMessage(
+    GROUP_CHAT_ID as string,
+    renderDailyPrayerCard(),
+    keyboard
+  );
+  saveToayCardMessageId(currentDate, msg.message_id);
+}
 // === COMMANDS ===
 
 const awaitingPrayer = new Map<string, number>(); //userId, messageId
@@ -55,7 +85,7 @@ bot.start(async (ctx) => {
   // add prayer
   if (ctx.payload === ButType.ADD_PRAYER) {
     const userId = ctx.from.id.toString();
-    ensureMemberExistis(userId, ctx.from.first_name || "Anonymous");
+    ensureMemberExist(userId, ctx.from.first_name || "Anonymous");
     const msg = await ctx.reply(prayerTemplate(), {
       parse_mode: "Markdown",
       reply_markup: { force_reply: true },
@@ -73,49 +103,27 @@ bot.start(async (ctx) => {
 
 // reply to template
 bot.on("text", async (ctx) => {
-  const msg = ctx.message;
   const userId = ctx.from.id.toString();
-  const expectedMsgId = awaitingPrayer.get(userId);
-
-  if (!expectedMsgId) return;
-  if (msg.reply_to_message?.message_id !== expectedMsgId) return;
-
-  ensureMemberExistis(userId, ctx.from.first_name || "Anonymous");
-  savePrayer(userId, msg.text || "");
+  if (!awaitingPrayer.has(userId)) return;
+  ensureMemberExist(userId, ctx.from.first_name || "Anonymous");
+  savePrayer(userId, ctx.message.text || "");
   awaitingPrayer.delete(userId);
 
   await ctx.reply("✅ Your prayer has been added. Thank you! ❤️");
 
-  // Direct command to view today
-  bot.command(ButType.VIEW_TODAY, async (ctx) => {
-    await ctx.reply(getTodayPrayersText());
-  });
+  await upsertDailyPrayerCard();
 });
 
 // Daily cron at 12 AM
-cron.schedule("0 0 * * *", async () => {
-  console.log("📌 Creating new daily pinned prayer card...");
-  const me = await bot.telegram.getMe();
-  const keyboard = getKeyboard(me.username!);
+// cron.schedule("0 0 * * *", async () => {
+//   console.log("📌 Creating new daily pinned prayer card...");
+//   await upsertDailyPrayerCard();
+// });
 
-  await bot.telegram.sendMessage(
-    GROUP_CHAT_ID,
-    renderDailyPrayerCard(),
-    keyboard
-  );
-});
-
-// (async () => {
-//   console.log("Testing pinned card now...");
-//   const me = await bot.telegram.getMe();
-//   const keyboard = getKeyboard(me.username!);
-
-//   await bot.telegram.sendMessage(
-//     GROUP_CHAT_ID,
-//     renderDailyPrayerCard(),
-//     keyboard
-//   );
-// })();
+(async () => {
+  console.log("Testing pinned card now...");
+  await upsertDailyPrayerCard();
+})();
 
 bot.launch().then(async () => {
   console.log("🙏 Prayer bot running");
