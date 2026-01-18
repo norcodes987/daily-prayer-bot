@@ -26,17 +26,22 @@ A Telegram bot that helps small groups pray together daily, track participation,
 
 ## ⚙️ Setup & Installation
 
-1. Clone the repository
-2. Install dependencies
-   npm install
-3. Create a .env file
-   BOT_TOKEN=your_telegram_bot_token
-   GROUP_CHAT_ID=-1001234567890
+1️⃣ Clone the repository
+
+2️⃣ Install dependencies
+npm install
+
+3️⃣ Create a .env file
+
+BOT_TOKEN=your_telegram_bot_token
+
+GROUP_CHAT_ID=-1001234567890
 
 Notes:
+
 The bot must be added to the group
 
-4. Run the bot
+4️⃣ Run the bot
 
 npm run dev
 
