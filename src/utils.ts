@@ -17,7 +17,7 @@ export const savePrayer = (user_id: string, text: string) => {
   db.prepare(
     `
     INSERT OR REPLACE INTO prayers(user_id, date, text) VALUES (?, ?, ?)
-    `
+    `,
   ).run(user_id, today(), text);
 };
 
@@ -26,7 +26,7 @@ export const getGroupMembers = () => {
     .prepare<[], Member>(
       `
     SELECT * FROM group_members
-    `
+    `,
     )
     .all();
 };
@@ -36,7 +36,7 @@ export const getPrayersToday = () => {
     .prepare(
       `
         SELECT user_id FROM prayers WHERE date = ?
-        `
+        `,
     )
     .all(today())
     .map((row: any) => row.user_id);
@@ -51,9 +51,10 @@ export const getTodayPrayersText = (): string => {
 
   prayers.forEach((p) => {
     const member = db
-      .prepare<string, Member>(
-        "SELECT display_name FROM group_members WHERE user_id = ?"
-      )
+      .prepare<
+        string,
+        Member
+      >("SELECT display_name FROM group_members WHERE user_id = ?")
       .get(p.user_id);
 
     text += `🙏 ${(member as Member).display_name}\n• ${p.text}\n\n`;
@@ -66,7 +67,7 @@ export const getTodayPrayersText = (): string => {
   return text;
 };
 
-export const getKeyboard = (botUsername: string) => {
+export const getKeyboard = (botUsername: string, date: string) => {
   return {
     reply_markup: {
       inline_keyboard: [
@@ -79,7 +80,7 @@ export const getKeyboard = (botUsername: string) => {
         [
           {
             text: "📜 View Today",
-            url: `https://t.me/${botUsername}?start=${ButType.VIEW_TODAY}`,
+            callback_data: `VIEW_DATE:${date}`,
           },
         ],
       ],
@@ -89,7 +90,7 @@ export const getKeyboard = (botUsername: string) => {
 
 export const ensureMemberExist = (userId: string, display_name: string) => {
   db.prepare(
-    `INSERT OR IGNORE INTO group_members(user_id, display_name) VALUES(?, ?)`
+    `INSERT OR IGNORE INTO group_members(user_id, display_name) VALUES(?, ?)`,
   ).run(userId, display_name);
 };
 
@@ -100,8 +101,15 @@ export const getTodayCardMessageId = (date: string) => {
   return row?.message_id ?? null;
 };
 
-export const saveToayCardMessageId = (date: string, messageId: number) => {
+export const saveTodayCardMessageId = (date: string, messageId: number) => {
   db.prepare(
-    "INSERT OR REPLACE INTO daily_card(date, message_id) VALUES(?, ?)"
+    "INSERT OR REPLACE INTO daily_card(date, message_id) VALUES(?, ?)",
   ).run(date, messageId);
+};
+
+export const getPrayersByDate = (date: string) => {
+  return db
+    .prepare(`SELECT user_id FROM prayers WHERE date = ?`)
+    .all(date)
+    .map((row: any) => row.user_id);
 };

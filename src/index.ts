@@ -6,12 +6,13 @@ import {
   ensureMemberExist,
   getGroupMembers,
   getKeyboard,
+  getPrayersByDate,
   getPrayersToday,
   getTodayCardMessageId,
   getTodayPrayersText,
   prayerTemplate,
   savePrayer,
-  saveToayCardMessageId,
+  saveTodayCardMessageId,
   today,
 } from "./utils";
 
@@ -30,18 +31,18 @@ const bot = new Telegraf<Context>(BOT_TOKEN);
 // });
 
 //daily prayer card
-function renderDailyPrayerCard(): string {
+function renderDailyPrayerCard(date: string): string {
   const members = getGroupMembers();
   const prayersToday = getPrayersToday();
   const progress = members.map((m) =>
-    prayersToday.includes(m.user_id) ? "🟢" : "⚪"
+    prayersToday.includes(m.user_id) ? "🟢" : "⚪",
   );
   const count = prayersToday.length;
   const total = members.length;
 
-  let text = `📖 Daily Prayer – ${today()}\n \n`;
+  let text = `📖 Daily Prayer – ${date}\n \n`;
   text += `👥 Today’s Progress\n${progress.join(
-    ""
+    "",
   )}   ${count} / ${total} submitted\n\n`;
   members.forEach((m, idx) => {
     text += `${progress[idx] === "🟢" ? "✅" : "⬜"} ${m.display_name}\n`;
@@ -51,8 +52,8 @@ function renderDailyPrayerCard(): string {
 
 async function upsertDailyPrayerCard(ctx?: Context) {
   const me = await bot.telegram.getMe();
-  const keyboard = getKeyboard(me.username!);
   const currentDate = today();
+  const keyboard = getKeyboard(me.username!, currentDate);
   const existingMessageId = getTodayCardMessageId(currentDate);
 
   try {
@@ -61,8 +62,8 @@ async function upsertDailyPrayerCard(ctx?: Context) {
         GROUP_CHAT_ID,
         existingMessageId,
         undefined,
-        renderDailyPrayerCard(),
-        keyboard
+        renderDailyPrayerCard(currentDate),
+        keyboard,
       );
       return;
     }
@@ -72,10 +73,10 @@ async function upsertDailyPrayerCard(ctx?: Context) {
   //create new card
   const msg = await bot.telegram.sendMessage(
     GROUP_CHAT_ID as string,
-    renderDailyPrayerCard(),
-    keyboard
+    renderDailyPrayerCard(currentDate),
+    keyboard,
   );
-  saveToayCardMessageId(currentDate, msg.message_id);
+  saveTodayCardMessageId(currentDate, msg.message_id);
 }
 // === COMMANDS ===
 
@@ -93,12 +94,25 @@ bot.start(async (ctx) => {
     awaitingPrayer.set(userId, msg.message_id);
     return;
   }
-  // view prayers
-  if (ctx.payload === ButType.VIEW_TODAY) {
-    await ctx.reply(getTodayPrayersText());
+});
+
+// view prayers
+bot.action(/VIEW_DATE:(.+)/, async (ctx) => {
+  console.log(ctx);
+  const date = ctx.match[1];
+  const prayers = getPrayersByDate(date as string);
+
+  if (prayers.length === 0) {
+    await ctx.reply(`No prayers submitted on ${date}.`);
     return;
   }
-  await ctx.reply("🙏 Welcome to the Daily Prayer Bot!");
+
+  let text = `📖 Prayers for ${date}\n\n`;
+  prayers.forEach((p) => {
+    text += `🙏 ${p.display_name}: ${p.text}\n\n`;
+  });
+
+  await ctx.reply(text);
 });
 
 // reply to template
@@ -115,15 +129,15 @@ bot.on("text", async (ctx) => {
 });
 
 //Daily cron at 12 AM
-cron.schedule("0 0 * * *", async () => {
-  console.log("📌 Creating new daily pinned prayer card...");
-  await upsertDailyPrayerCard();
-});
-
-// (async () => {
-//   console.log("Testing pinned card now...");
+// cron.schedule("0 0 * * *", async () => {
+//   console.log("📌 Creating new daily pinned prayer card...");
 //   await upsertDailyPrayerCard();
-// })();
+// });
+
+(async () => {
+  console.log("Testing pinned card now...");
+  await upsertDailyPrayerCard();
+})();
 
 bot.launch().then(async () => {
   console.log("🙏 Prayer bot running");
