@@ -129,15 +129,15 @@ bot.on("text", async (ctx) => {
 });
 
 //Daily cron at 12 AM
-// cron.schedule("0 0 * * *", async () => {
-//   console.log("📌 Creating new daily pinned prayer card...");
-//   await upsertDailyPrayerCard();
-// });
-
-(async () => {
-  console.log("Testing pinned card now...");
+cron.schedule("0 0 * * *", async () => {
+  console.log("📌 Creating new daily pinned prayer card...");
   await upsertDailyPrayerCard();
-})();
+});
+
+// (async () => {
+//   console.log("Testing pinned card now...");
+//   await upsertDailyPrayerCard();
+// })();
 
 bot.launch().then(async () => {
   console.log("🙏 Prayer bot running");
