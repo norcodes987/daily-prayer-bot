@@ -7,9 +7,8 @@ import {
   getGroupMembers,
   getKeyboard,
   getPrayersByDate,
-  getPrayersToday,
+  getPrayersUserIdsByDate,
   getTodayCardMessageId,
-  getTodayPrayersText,
   prayerTemplate,
   savePrayer,
   saveTodayCardMessageId,
@@ -33,7 +32,7 @@ const bot = new Telegraf<Context>(BOT_TOKEN);
 //daily prayer card
 function renderDailyPrayerCard(date: string): string {
   const members = getGroupMembers();
-  const prayersToday = getPrayersToday();
+  const prayersToday = getPrayersUserIdsByDate(date);
   const progress = members.map((m) =>
     prayersToday.includes(m.user_id) ? "🟢" : "⚪",
   );
@@ -50,7 +49,7 @@ function renderDailyPrayerCard(date: string): string {
   return text;
 }
 
-async function upsertDailyPrayerCard(ctx?: Context) {
+async function upsertDailyPrayerCard() {
   const me = await bot.telegram.getMe();
   const currentDate = today();
   const keyboard = getKeyboard(me.username!, currentDate);
@@ -83,6 +82,7 @@ async function upsertDailyPrayerCard(ctx?: Context) {
 const awaitingPrayer = new Map<string, number>(); //userId, messageId
 
 bot.start(async (ctx) => {
+  console.log(ctx.payload);
   // add prayer
   if (ctx.payload === ButType.ADD_PRAYER) {
     const userId = ctx.from.id.toString();
@@ -94,25 +94,45 @@ bot.start(async (ctx) => {
     awaitingPrayer.set(userId, msg.message_id);
     return;
   }
+
+  // view prayers
+
+  // if (ctx.payload?.startsWith(ButType.VIEW_TODAY)) {
+  //   const date = ctx.payload.split(":")[1];
+  //   const prayers = getPrayersByDate(date as string);
+  //   console.log(prayers);
+  //   let text = `📖 Prayers for ${date}\n\n`;
+
+  //   if (prayers.length === 0) {
+  //     text += "🙏 No prayers submitted yet today.";
+  //   } else {
+  //     prayers.forEach((p) => {
+  //       text += `🙏 ${p.display_name}: ${p.text}\n\n`;
+  //     });
+  //   }
+
+  //   await ctx.reply(text);
+  //   return;
+  // }
 });
 
-// view prayers
 bot.action(/VIEW_DATE:(.+)/, async (ctx) => {
-  console.log(ctx);
+  await ctx.answerCbQuery(); // hide the button loading
+
+  const userId = ctx.from.id;
   const date = ctx.match[1];
   const prayers = getPrayersByDate(date as string);
 
+  let text = `📖 Prayers for ${date}\n\n`;
   if (prayers.length === 0) {
-    await ctx.reply(`No prayers submitted on ${date}.`);
-    return;
+    text += `🙏 No prayers submitted yet for ${date}.`;
+  } else {
+    prayers.forEach((p) => {
+      text += `🙏 ${p.display_name}: ${p.text}\n\n`;
+    });
   }
 
-  let text = `📖 Prayers for ${date}\n\n`;
-  prayers.forEach((p) => {
-    text += `🙏 ${p.display_name}: ${p.text}\n\n`;
-  });
-
-  await ctx.reply(text);
+  await ctx.telegram.sendMessage(userId, text);
 });
 
 // reply to template

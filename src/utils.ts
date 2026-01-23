@@ -1,5 +1,5 @@
 import db from "./db";
-import { ButType, Member, Prayer } from "./interface";
+import { ButType, Member, Prayer, PrayerWithMember } from "./interface";
 
 export function today(): string {
   return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
@@ -31,14 +31,14 @@ export const getGroupMembers = () => {
     .all();
 };
 
-export const getPrayersToday = () => {
+export const getPrayersUserIdsByDate = (date: string): string[] => {
   return db
     .prepare(
       `
         SELECT user_id FROM prayers WHERE date = ?
         `,
     )
-    .all(today())
+    .all(date)
     .map((row: any) => row.user_id);
 };
 
@@ -107,9 +107,19 @@ export const saveTodayCardMessageId = (date: string, messageId: number) => {
   ).run(date, messageId);
 };
 
-export const getPrayersByDate = (date: string) => {
+export const getPrayersByDate = (date: string): PrayerWithMember[] => {
   return db
-    .prepare(`SELECT user_id FROM prayers WHERE date = ?`)
-    .all(date)
-    .map((row: any) => row.user_id);
+    .prepare(
+      `
+      SELECT 
+        p.user_id,
+        p.text,
+        m.display_name
+      FROM prayers p
+      JOIN group_members m ON m.user_id = p.user_id
+      WHERE p.date = ?
+      ORDER BY m.display_name
+    `,
+    )
+    .all(date) as PrayerWithMember[];
 };

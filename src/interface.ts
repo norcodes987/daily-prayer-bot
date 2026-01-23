@@ -8,12 +8,13 @@ export interface Prayer {
   text: string;
 }
 
-export interface PinnedMessage {
-  chat_id: number;
-  message_id: number;
-}
-
 export enum ButType {
   ADD_PRAYER = "add_prayer",
-  VIEW_TODAY = "view_today",
+  VIEW_TODAY = "VIEW_DATE",
+}
+
+export interface PrayerWithMember {
+  user_id: string;
+  text: string;
+  display_name: string;
 }
