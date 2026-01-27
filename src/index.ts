@@ -81,39 +81,19 @@ async function upsertDailyPrayerCard() {
 
 const awaitingPrayer = new Map<string, number>(); //userId, messageId
 
-bot.start(async (ctx) => {
-  console.log(ctx.payload);
-  // add prayer
-  if (ctx.payload === ButType.ADD_PRAYER) {
-    const userId = ctx.from.id.toString();
-    ensureMemberExist(userId, ctx.from.first_name || "Anonymous");
-    const msg = await ctx.reply(prayerTemplate(), {
-      parse_mode: "Markdown",
-      reply_markup: { force_reply: true },
-    });
-    awaitingPrayer.set(userId, msg.message_id);
-    return;
-  }
+bot.action(ButType.ADD_PRAYER, async (ctx) => {
+  await ctx.answerCbQuery(); // remove loading spinner
 
-  // view prayers
+  const userId = ctx.from.id.toString();
+  ensureMemberExist(userId, ctx.from.first_name || "Anonymous");
 
-  // if (ctx.payload?.startsWith(ButType.VIEW_TODAY)) {
-  //   const date = ctx.payload.split(":")[1];
-  //   const prayers = getPrayersByDate(date as string);
-  //   console.log(prayers);
-  //   let text = `📖 Prayers for ${date}\n\n`;
+  // Send template to private DM
+  const msg = await ctx.telegram.sendMessage(userId, prayerTemplate(), {
+    parse_mode: "Markdown",
+    reply_markup: { force_reply: true },
+  });
 
-  //   if (prayers.length === 0) {
-  //     text += "🙏 No prayers submitted yet today.";
-  //   } else {
-  //     prayers.forEach((p) => {
-  //       text += `🙏 ${p.display_name}: ${p.text}\n\n`;
-  //     });
-  //   }
-
-  //   await ctx.reply(text);
-  //   return;
-  // }
+  awaitingPrayer.set(userId, msg.message_id);
 });
 
 bot.action(/VIEW_DATE:(.+)/, async (ctx) => {
@@ -149,15 +129,15 @@ bot.on("text", async (ctx) => {
 });
 
 //Daily cron at 12 AM
-cron.schedule("0 0 * * *", async () => {
-  console.log("📌 Creating new daily pinned prayer card...");
-  await upsertDailyPrayerCard();
-});
-
-// (async () => {
-//   console.log("Testing pinned card now...");
+// cron.schedule("0 0 * * *", async () => {
+//   console.log("📌 Creating new daily pinned prayer card...");
 //   await upsertDailyPrayerCard();
-// })();
+// });
+
+(async () => {
+  console.log("Testing pinned card now...");
+  await upsertDailyPrayerCard();
+})();
 
 bot.launch().then(async () => {
   console.log("🙏 Prayer bot running");

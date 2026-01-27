@@ -20,9 +20,10 @@ A Telegram bot that helps small groups pray together daily, track participation,
 - Automatically tracks group members
 - Shows who has / hasn’t submitted a prayer today
 
-#### 👀 View Today’s Prayers
+#### 👀 View Today’s and Past Prayers
 
 - See all prayers submitted for the current day
+- Users can view prayers from previous days
 
 ## ⚙️ Setup & Installation
 

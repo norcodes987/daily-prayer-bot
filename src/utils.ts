@@ -73,8 +73,8 @@ export const getKeyboard = (botUsername: string, date: string) => {
       inline_keyboard: [
         [
           {
-            text: "✍️ Add Prayer",
-            url: `https://t.me/${botUsername}?start=${ButType.ADD_PRAYER}`,
+            text: "✨ Add Prayer",
+            callback_data: ButType.ADD_PRAYER,
           },
         ],
         [
